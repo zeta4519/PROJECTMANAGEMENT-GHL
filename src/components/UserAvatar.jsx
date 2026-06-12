@@ -1,8 +1,8 @@
 import { USERS } from '../store/AppContext'
 
 const AVATAR_IMG = {
-  igor: '/pm/avatar-igor.jpg',
-  beatrice: '/pm/avatar-beatrice.png',
+  igor: '/pm/avatar-beatrice.png',
+  beatrice: '/pm/avatar-igor.jpg',
 }
 
 export default function UserAvatar({ userId, size = 24, showTooltip = false }) {
