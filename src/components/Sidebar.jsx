@@ -1,7 +1,8 @@
 import { useApp } from '../store/AppContext'
 import { useFilteredTasks, useFilteredGroups } from '../store/useFilteredTasks'
+import { api } from '../api.js'
 import {
-  Sun, CalendarDays, LayoutGrid, List, Layers, Plus, ChevronDown, Circle
+  Sun, CalendarDays, LayoutGrid, List, Plus, ChevronDown, Trash2
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -88,22 +89,40 @@ export default function Sidebar() {
             {visibleGroups.map(g => {
               const count = state.tasks.filter(t => t.groupId === g.id && t.status !== 'done').length
               const active = state.currentView === 'group' && state.selectedGroupId === g.id
+
+              const deleteGroup = async (e) => {
+                e.stopPropagation()
+                if (!confirm(`Eliminare il gruppo "${g.name}"?`)) return
+                try {
+                  await api.groups.delete(g.id)
+                  dispatch({ type: 'DELETE_GROUP', id: g.id })
+                  if (active) dispatch({ type: 'SET_VIEW', view: 'today' })
+                } catch (err) { alert('Errore: ' + err.message) }
+              }
+
               return (
-                <button
-                  key={g.id}
-                  onClick={() => setView('group', g.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                    active ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-                  }`}
-                >
+                <div key={g.id} className="group/item relative">
+                  <button
+                    onClick={() => setView('group', g.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                      active ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                    }`}
+                  >
                   <div className="flex items-center gap-2.5">
                     <span className="text-base leading-none">{g.icon}</span>
                     <span className="truncate">{g.name}</span>
                   </div>
                   {count > 0 && (
-                    <span className="text-xs text-white/25">{count}</span>
+                    <span className="text-xs text-white/25 group-hover/item:hidden">{count}</span>
                   )}
                 </button>
+                  <button
+                    onClick={deleteGroup}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 text-white/25 hover:text-red-400 transition-all p-1"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               )
             })}
           </div>
