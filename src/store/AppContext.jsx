@@ -2,8 +2,8 @@ import { createContext, useContext, useReducer, useEffect } from 'react'
 import { api } from '../api.js'
 
 export const ACCOUNTS = [
-  { id: 'acc1', name: 'Stark Sales', shortName: 'Stark', color: '#6366f1' },
-  { id: 'acc2', name: 'Seconda Azienda', shortName: 'Azienda 2', color: '#f59e0b' },
+  { id: 'acc1', name: 'Igor Cretu (PB)', shortName: 'Igor Cretu', color: '#3b82f6' },
+  { id: 'acc2', name: 'Looking4', shortName: 'Looking4', color: '#ffffff' },
 ]
 
 export function getWeekKey(date = new Date()) {
