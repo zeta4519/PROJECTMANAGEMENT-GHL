@@ -16,19 +16,23 @@ const PORT = process.env.PORT || 3001
 app.use(cors())
 app.use(express.json())
 
-// API routes
+// API routes (accessible both at /api and /pm/api for flexibility)
 app.use('/api/tasks', tasksRouter)
 app.use('/api/groups', groupsRouter)
 app.use('/api/goals', goalsRouter)
 app.use('/api/webhook', webhookRouter)
-
-// Health check
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
 
-// Serve built frontend in production
+app.use('/pm/api/tasks', tasksRouter)
+app.use('/pm/api/groups', groupsRouter)
+app.use('/pm/api/goals', goalsRouter)
+app.use('/pm/api/webhook', webhookRouter)
+app.get('/pm/api/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
+
+// Serve built frontend under /pm/
 const distPath = path.join(__dirname, '../dist')
-app.use(express.static(distPath))
-app.get('/{*splat}', (req, res) => {
+app.use('/pm', express.static(distPath))
+app.get('/pm/{*splat}', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'))
 })
 
