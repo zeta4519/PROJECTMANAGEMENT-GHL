@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  pm-app:
+    build: .
+    container_name: pm-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - pm-data:/app/data
+    environment:
+      - PORT=3001
+      - DB_PATH=/app/data/pm.db
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - GHL_LOCATION_ACC1=${GHL_LOCATION_ACC1}
+      - GHL_LOCATION_ACC2=${GHL_LOCATION_ACC2}
+
+volumes:
+  pm-data:
