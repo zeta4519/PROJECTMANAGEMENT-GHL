@@ -8,7 +8,7 @@ export default function AccountFilter() {
   const set = (id) => dispatch({ type: 'SET_ACCOUNT_FILTER', accountId: id })
 
   return (
-    <div className="flex items-center gap-1.5 px-6 py-2.5 border-b border-white/5" style={{ background: '#111113' }}>
+    <div className="flex items-center gap-1.5 px-6 py-2.5 border-b border-white/5" style={{ background: '#111113', paddingTop: 'max(10px, env(safe-area-inset-top))' }}>
       <span className="text-xs text-white/25 mr-1">Account:</span>
       <button
         onClick={() => set(null)}

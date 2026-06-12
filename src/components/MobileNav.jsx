@@ -97,8 +97,8 @@ export default function MobileNav() {
 
       {/* Bottom tab bar */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 flex items-center border-t border-white/8 pb-safe"
-        style={{ background: '#111113' }}
+        className="fixed bottom-0 left-0 right-0 z-30 flex items-center border-t border-white/8"
+        style={{ background: '#111113', paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
       >
         {NAV.map(({ id, label, icon: Icon }) => {
           const active = state.currentView === id && !state.selectedGroupId
