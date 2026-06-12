@@ -18,3 +18,9 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Safe area for iPhone notch / home indicator */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Prevent overscroll bounce on iOS */
+html, body { overscroll-behavior: none; height: 100%; }

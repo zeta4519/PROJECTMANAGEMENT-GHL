@@ -16,7 +16,7 @@ export default function AllTasksView() {
   const toggle = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }))
 
   return (
-    <div className="flex-1 overflow-y-auto px-8 py-8 max-w-2xl">
+    <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 max-w-2xl w-full mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white/90">Tutti i task</h1>
         <p className="text-sm text-white/35 mt-1">{tasks.filter(t => t.status !== 'done').length} attivi · {tasks.filter(t => t.status === 'done').length} completati</p>

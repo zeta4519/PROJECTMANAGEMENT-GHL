@@ -24,7 +24,7 @@ export default function TodayView() {
   const completionPct = todayTasks.length ? Math.round((done.length / todayTasks.length) * 100) : 0
 
   return (
-    <div className="flex-1 overflow-y-auto px-8 py-8 max-w-2xl">
+    <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 max-w-2xl w-full mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2.5 mb-1">

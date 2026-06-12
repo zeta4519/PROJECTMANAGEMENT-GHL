@@ -19,7 +19,7 @@ export default function GroupView() {
   const openNew = () => dispatch({ type: 'SET_MODAL', modal: { type: 'new-task', defaults: { groupId: group.id } } })
 
   return (
-    <div className="flex-1 overflow-y-auto px-8 py-8 max-w-2xl">
+    <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 max-w-2xl w-full mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{group.icon}</span>

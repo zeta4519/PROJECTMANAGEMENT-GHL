@@ -78,8 +78,8 @@ export default function TaskModal() {
   const toggleSubtask = (id) => setForm(f => ({ ...f, subtasks: f.subtasks.map(s => s.id === id ? { ...s, completed: !s.completed } : s) }))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={close}>
-      <div className="w-full max-w-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: '#1a1a1d' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={close}>
+      <div className="w-full md:max-w-xl rounded-t-2xl md:rounded-xl border-t md:border border-white/10 shadow-2xl overflow-hidden max-h-[92dvh] overflow-y-auto" style={{ background: '#1a1a1d' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <h2 className="text-sm font-semibold text-white/90">{existing ? 'Modifica task' : 'Nuovo task'}</h2>
           <button onClick={close} className="text-white/30 hover:text-white/60 transition-colors"><X size={16} /></button>
