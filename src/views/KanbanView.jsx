@@ -1,5 +1,5 @@
 import { useApp } from '../store/AppContext'
-import { useFilteredTasks } from '../store/useFilteredTasks'
+import { useFilteredTasks, useFilteredGroups } from '../store/useFilteredTasks'
 import { api } from '../api.js'
 import { useState, useRef } from 'react'
 import { Plus, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react'
@@ -84,11 +84,15 @@ function KanbanCard({ task, onDragStart }) {
 
 export default function KanbanView() {
   const { dispatch } = useApp()
-  const tasks = useFilteredTasks()
+  const allTasks = useFilteredTasks()
+  const visibleGroups = useFilteredGroups()
+  const [groupFilter, setGroupFilter] = useState(null)
   const [dragOverCol, setDragOverCol] = useState(null)
   const dragTaskId = useRef(null)
 
-  const openNew = (status) => dispatch({ type: 'SET_MODAL', modal: { type: 'new-task', defaults: { status } } })
+  const tasks = groupFilter ? allTasks.filter(t => t.groupId === groupFilter) : allTasks
+
+  const openNew = (status) => dispatch({ type: 'SET_MODAL', modal: { type: 'new-task', defaults: { status, groupId: groupFilter || undefined } } })
 
   const handleDragStart = (e, taskId) => {
     dragTaskId.current = taskId
@@ -126,7 +130,24 @@ export default function KanbanView() {
     <div className="flex-1 overflow-x-auto px-8 py-8">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white/90">Kanban</h1>
-        <p className="text-sm text-white/35 mt-1">Trascina le card per cambiare stato</p>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <button
+            onClick={() => setGroupFilter(null)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!groupFilter ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-white/40 border border-white/10 hover:border-white/20 hover:text-white/60'}`}
+          >
+            Tutti
+          </button>
+          {visibleGroups.map(g => (
+            <button
+              key={g.id}
+              onClick={() => setGroupFilter(g.id === groupFilter ? null : g.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${groupFilter === g.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-white/40 border border-white/10 hover:border-white/20 hover:text-white/60'}`}
+            >
+              <span>{g.icon}</span>
+              {g.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-4 min-w-max pb-4">
