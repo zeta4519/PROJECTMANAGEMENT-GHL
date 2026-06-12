@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useApp } from '../store/AppContext'
+import { useApp, USERS } from '../store/AppContext'
 import { api } from '../api.js'
 import { X, Plus, Trash2 } from 'lucide-react'
+import UserAvatar from './UserAvatar'
 
 const STATUSES = ['todo', 'in-progress', 'done', 'cancelled']
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none']
@@ -27,6 +28,7 @@ export default function TaskModal() {
     dueDate: existing?.dueDate || defaults.dueDate || today,
     groupId: existing?.groupId || defaults.groupId || (state.groups[0]?.id || ''),
     accountId: existing?.accountId ?? defaults.accountId ?? state.accountFilter ?? null,
+    assigneeId: existing?.assigneeId ?? defaults.assigneeId ?? null,
     subtasks: existing?.subtasks || [],
   })
   const [newSubtask, setNewSubtask] = useState('')
@@ -124,6 +126,28 @@ export default function TaskModal() {
                 <option value="" style={{ background: '#1a1a1d' }}>— nessuno —</option>
                 {state.groups.map(g => <option key={g.id} value={g.id} style={{ background: '#1a1a1d' }}>{g.icon} {g.name}</option>)}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-white/30 mb-2 block">Assegna a</label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setForm(f => ({ ...f, assigneeId: null }))}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${!form.assigneeId ? 'border-indigo-500/50 bg-indigo-500/10 text-white/80' : 'border-white/10 text-white/40 hover:border-white/20'}`}
+              >
+                <span className="text-xs">—</span> Nessuno
+              </button>
+              {USERS.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => setForm(f => ({ ...f, assigneeId: f.assigneeId === u.id ? null : u.id }))}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${form.assigneeId === u.id ? 'border-indigo-500/50 bg-indigo-500/10 text-white/80' : 'border-white/10 text-white/40 hover:border-white/20'}`}
+                >
+                  <UserAvatar userId={u.id} size={20} />
+                  {u.name}
+                </button>
+              ))}
             </div>
           </div>
 

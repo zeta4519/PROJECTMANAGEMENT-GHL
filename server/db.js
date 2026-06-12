@@ -12,6 +12,9 @@ const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
 
+// Add assignee_id column if it doesn't exist (migration)
+try { db.exec('ALTER TABLE tasks ADD COLUMN assignee_id TEXT') } catch {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS groups (
     id TEXT PRIMARY KEY,

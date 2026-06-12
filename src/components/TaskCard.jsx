@@ -2,6 +2,7 @@ import { useApp } from '../store/AppContext'
 import { api } from '../api.js'
 import { Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import UserAvatar from './UserAvatar'
 
 const PRIORITY_DOT = { urgent: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-yellow-400', low: 'bg-gray-500', none: 'bg-gray-700' }
 const PRIORITY_LABEL = { urgent: 'Urgente', high: 'Alta', medium: 'Media', low: 'Bassa', none: '' }
@@ -52,7 +53,10 @@ export default function TaskCard({ task, compact = false }) {
           {done ? <CheckCircle2 size={16} className="text-green-500/60" /> : <Circle size={16} />}
         </button>
         <div className="flex-1 min-w-0">
-          <span className={`text-sm font-medium leading-snug ${done ? 'line-through text-white/30' : 'text-white/85'}`}>{task.title}</span>
+          <div className="flex items-start justify-between gap-2">
+            <span className={`text-sm font-medium leading-snug ${done ? 'line-through text-white/30' : 'text-white/85'}`}>{task.title}</span>
+            {task.assigneeId && <UserAvatar userId={task.assigneeId} size={20} showTooltip />}
+          </div>
           {!compact && task.description && <p className="text-xs text-white/35 mt-0.5 line-clamp-1">{task.description}</p>}
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <div className="flex items-center gap-1">

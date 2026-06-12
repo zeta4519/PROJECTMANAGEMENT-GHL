@@ -1,6 +1,11 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
 import { api } from '../api.js'
 
+export const USERS = [
+  { id: 'igor', name: 'Igor', initials: 'IC', color: '#3b82f6' },
+  { id: 'beatrice', name: 'Beatrice', initials: 'BE', color: '#a855f7' },
+]
+
 export const ACCOUNTS = [
   { id: 'acc1', name: 'Igor Cretu (PB)', shortName: 'Igor Cretu', color: '#3b82f6' },
   { id: 'acc2', name: 'Looking4', shortName: 'Looking4', color: '#ffffff' },

@@ -15,6 +15,7 @@ function rowToTask(row, subtasks) {
     dueDate: row.due_date,
     groupId: row.group_id,
     accountId: row.account_id,
+    assigneeId: row.assignee_id || null,
     createdAt: row.created_at,
     subtasks: subtasks.map(s => ({ id: s.id, title: s.title, completed: !!s.completed })),
   }
@@ -31,12 +32,12 @@ router.get('/', (req, res) => {
 
 // POST /api/tasks
 router.post('/', (req, res) => {
-  const { title, description = '', status = 'todo', priority = 'medium', dueDate = null, groupId = null, accountId = null, subtasks = [] } = req.body
+  const { title, description = '', status = 'todo', priority = 'medium', dueDate = null, groupId = null, accountId = null, assigneeId = null, subtasks = [] } = req.body
   if (!title?.trim()) return res.status(400).json({ error: 'title required' })
   const id = uid()
   const createdAt = new Date().toISOString().split('T')[0]
-  db.prepare('INSERT INTO tasks (id, title, description, status, priority, due_date, group_id, account_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(id, title.trim(), description, status, priority, dueDate, groupId, accountId, createdAt)
+  db.prepare('INSERT INTO tasks (id, title, description, status, priority, due_date, group_id, account_id, assignee_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, title.trim(), description, status, priority, dueDate, groupId, accountId, assigneeId, createdAt)
   const insertSub = db.prepare('INSERT INTO subtasks (id, task_id, title, completed, sort_order) VALUES (?, ?, ?, 0, ?)')
   subtasks.forEach((s, i) => insertSub.run(uid(), id, s.title, i))
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
@@ -50,6 +51,7 @@ router.patch('/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'not found' })
   const { title, description, status, priority, dueDate, groupId, accountId, subtasks } = req.body
+  const assigneeId = 'assigneeId' in req.body ? req.body.assigneeId : undefined
   db.prepare(`UPDATE tasks SET
     title = COALESCE(?, title),
     description = COALESCE(?, description),
@@ -59,6 +61,9 @@ router.patch('/:id', (req, res) => {
     group_id = COALESCE(?, group_id),
     account_id = COALESCE(?, account_id)
     WHERE id = ?`).run(title ?? null, description ?? null, status ?? null, priority ?? null, dueDate ?? null, groupId ?? null, accountId ?? null, id)
+  if (assigneeId !== undefined) {
+    db.prepare('UPDATE tasks SET assignee_id = ? WHERE id = ?').run(assigneeId, id)
+  }
   if (subtasks !== undefined) {
     db.prepare('DELETE FROM subtasks WHERE task_id = ?').run(id)
     const insertSub = db.prepare('INSERT INTO subtasks (id, task_id, title, completed, sort_order) VALUES (?, ?, ?, ?, ?)')
