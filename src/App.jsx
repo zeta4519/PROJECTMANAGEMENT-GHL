@@ -1,4 +1,5 @@
 import { AppProvider, useApp } from './store/AppContext'
+import PinLock from './components/PinLock'
 import Sidebar from './components/Sidebar'
 import AccountFilter from './components/AccountFilter'
 import TaskModal from './components/TaskModal'
@@ -41,8 +42,10 @@ function Main() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Main />
-    </AppProvider>
+    <PinLock>
+      <AppProvider>
+        <Main />
+      </AppProvider>
+    </PinLock>
   )
 }
