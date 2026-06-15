@@ -1,11 +1,25 @@
 import { useState } from 'react'
-import { useApp, getWeekKey } from '../store/AppContext'
+import { useApp, getWeekKey, USERS } from '../store/AppContext'
 import { api } from '../api.js'
 import { X, Plus, Trash2 } from 'lucide-react'
+import UserAvatar from './UserAvatar'
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e']
+const ASSIGNEE_CYCLE = [null, 'igor', 'beatrice', 'both']
 
 function uid() { return Math.random().toString(36).slice(2) }
+
+function AssigneeCycleButton({ assigneeId, onClick }) {
+  const label = assigneeId === 'both' ? 'Entrambi' : assigneeId ? USERS.find(u => u.id === assigneeId)?.name : 'Nessuno'
+  return (
+    <button onClick={onClick} title={label} className="flex-shrink-0 w-6 h-6 rounded-full border border-white/10 flex items-center justify-center hover:border-white/30 transition-colors overflow-hidden">
+      {assigneeId
+        ? <UserAvatar userId={assigneeId} size={assigneeId === 'both' ? 16 : 22} />
+        : <span className="text-white/20 text-xs">—</span>
+      }
+    </button>
+  )
+}
 
 export default function GoalModal() {
   const { state, dispatch } = useApp()
@@ -19,10 +33,12 @@ export default function GoalModal() {
     title: existing?.title || '',
     description: existing?.description || '',
     color: existing?.color || '#6366f1',
+    groupId: existing?.groupId || defaults.groupId || null,
     subtasks: existing?.subtasks || [],
   })
   const [newSub, setNewSub] = useState('')
   const [newSubDate, setNewSubDate] = useState('')
+  const [newSubAssignee, setNewSubAssignee] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const close = () => dispatch({ type: 'SET_MODAL', modal: null })
@@ -38,6 +54,8 @@ export default function GoalModal() {
         const created = await api.goals.create({ ...form, weekKey: defaults.weekKey || getWeekKey() })
         dispatch({ type: 'ADD_GOAL', goal: created })
       }
+      const tasks = await api.tasks.list()
+      dispatch({ type: 'SET_TASKS', tasks })
       close()
     } catch (e) {
       alert('Errore: ' + e.message)
@@ -62,13 +80,20 @@ export default function GoalModal() {
 
   const addSub = () => {
     if (!newSub.trim()) return
-    setForm(f => ({ ...f, subtasks: [...f.subtasks, { id: uid(), title: newSub.trim(), completed: false, dueDate: newSubDate || null }] }))
+    setForm(f => ({ ...f, subtasks: [...f.subtasks, { id: uid(), title: newSub.trim(), completed: false, dueDate: newSubDate || null, assigneeId: newSubAssignee }] }))
     setNewSub('')
     setNewSubDate('')
+    setNewSubAssignee(null)
   }
   const removeSub = (id) => setForm(f => ({ ...f, subtasks: f.subtasks.filter(s => s.id !== id) }))
   const toggleSub = (id) => setForm(f => ({ ...f, subtasks: f.subtasks.map(s => s.id === id ? { ...s, completed: !s.completed } : s) }))
   const setSubDate = (id, dueDate) => setForm(f => ({ ...f, subtasks: f.subtasks.map(s => s.id === id ? { ...s, dueDate: dueDate || null } : s) }))
+  const cycleSubAssignee = (id) => setForm(f => ({ ...f, subtasks: f.subtasks.map(s => {
+    if (s.id !== id) return s
+    const idx = ASSIGNEE_CYCLE.indexOf(s.assigneeId || null)
+    const next = ASSIGNEE_CYCLE[(idx + 1) % ASSIGNEE_CYCLE.length]
+    return { ...s, assigneeId: next }
+  }) }))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={close}>
@@ -85,6 +110,14 @@ export default function GoalModal() {
           <input autoFocus value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Qual è l'obiettivo di questa settimana?" className="w-full bg-transparent text-white text-base font-medium outline-none placeholder-white/20 border-b border-white/10 pb-2" onKeyDown={e => e.key === 'Enter' && save()} />
 
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Contesto o note..." rows={2} className="w-full bg-white/5 text-white/70 text-sm outline-none placeholder-white/20 rounded-lg px-3 py-2 resize-none border border-white/10 focus:border-white/20" />
+
+          <div>
+            <label className="text-xs text-white/30 mb-1 block">Gruppo</label>
+            <select value={form.groupId || ''} onChange={e => setForm(f => ({ ...f, groupId: e.target.value || null }))} className="w-full bg-white/5 border border-white/10 text-white/80 text-sm rounded-lg px-3 py-1.5 outline-none">
+              <option value="" style={{ background: '#1a1a1d' }}>— nessuno —</option>
+              {state.groups.map(g => <option key={g.id} value={g.id} style={{ background: '#1a1a1d' }}>{g.icon} {g.name}</option>)}
+            </select>
+          </div>
 
           <div>
             <label className="text-xs text-white/30 mb-2 block">Colore</label>
@@ -105,6 +138,7 @@ export default function GoalModal() {
                     {s.completed && <span className="text-white text-[10px]">✓</span>}
                   </button>
                   <span className={`text-sm flex-1 ${s.completed ? 'line-through text-white/30' : 'text-white/70'}`}>{s.title}</span>
+                  <AssigneeCycleButton assigneeId={s.assigneeId || null} onClick={() => cycleSubAssignee(s.id)} />
                   <input
                     type="date"
                     value={s.dueDate || ''}
@@ -118,6 +152,7 @@ export default function GoalModal() {
             </div>
             <div className="flex gap-2">
               <input value={newSub} onChange={e => setNewSub(e.target.value)} placeholder="Aggiungi step..." className="flex-1 bg-white/5 border border-white/10 text-white/70 text-sm rounded-lg px-3 py-1.5 outline-none placeholder-white/20 focus:border-white/20" onKeyDown={e => e.key === 'Enter' && addSub()} />
+              <AssigneeCycleButton assigneeId={newSubAssignee} onClick={() => setNewSubAssignee(a => ASSIGNEE_CYCLE[(ASSIGNEE_CYCLE.indexOf(a) + 1) % ASSIGNEE_CYCLE.length])} />
               <input
                 type="date"
                 value={newSubDate}

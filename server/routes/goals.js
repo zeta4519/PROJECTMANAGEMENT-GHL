@@ -7,8 +7,8 @@ function uid() { return Math.random().toString(36).slice(2) + Math.random().toSt
 function rowToGoal(row, subtasks) {
   return {
     id: row.id, title: row.title, description: row.description,
-    weekKey: row.week_key, color: row.color,
-    subtasks: subtasks.map(s => ({ id: s.id, title: s.title, completed: !!s.completed, dueDate: s.due_date || null })),
+    weekKey: row.week_key, color: row.color, groupId: row.group_id || null,
+    subtasks: subtasks.map(s => ({ id: s.id, title: s.title, completed: !!s.completed, dueDate: s.due_date || null, assigneeId: s.assignee_id || null })),
   }
 }
 
@@ -19,15 +19,15 @@ function syncSubtaskTask(sub, goal) {
     if (sub.linkedTaskId) {
       const existingTask = db.prepare('SELECT id FROM tasks WHERE id = ?').get(sub.linkedTaskId)
       if (existingTask) {
-        db.prepare('UPDATE tasks SET title = ?, due_date = ?, status = ? WHERE id = ?')
-          .run(sub.title, sub.dueDate, sub.completed ? 'done' : 'todo', sub.linkedTaskId)
+        db.prepare('UPDATE tasks SET title = ?, due_date = ?, status = ?, group_id = ?, assignee_id = ? WHERE id = ?')
+          .run(sub.title, sub.dueDate, sub.completed ? 'done' : 'todo', goal.group_id || null, sub.assigneeId || null, sub.linkedTaskId)
         return sub.linkedTaskId
       }
     }
     const taskId = uid()
     const createdAt = new Date().toISOString().split('T')[0]
-    db.prepare('INSERT INTO tasks (id, title, description, status, priority, due_date, group_id, account_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(taskId, sub.title, `Obiettivo: ${goal.title}`, sub.completed ? 'done' : 'todo', 'medium', sub.dueDate, null, null, createdAt)
+    db.prepare('INSERT INTO tasks (id, title, description, status, priority, due_date, group_id, account_id, assignee_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(taskId, sub.title, `Obiettivo: ${goal.title}`, sub.completed ? 'done' : 'todo', 'medium', sub.dueDate, goal.group_id || null, null, sub.assigneeId || null, createdAt)
     return taskId
   } else {
     if (sub.linkedTaskId) {
@@ -46,27 +46,31 @@ router.get('/', (req, res) => {
 })
 
 router.post('/', (req, res) => {
-  const { title, description = '', weekKey, color = '#6366f1', subtasks = [] } = req.body
+  const { title, description = '', weekKey, color = '#6366f1', groupId = null, subtasks = [] } = req.body
   if (!title?.trim()) return res.status(400).json({ error: 'title required' })
   if (!weekKey) return res.status(400).json({ error: 'weekKey required' })
   const id = uid()
-  db.prepare('INSERT INTO goals (id, title, description, week_key, color) VALUES (?, ?, ?, ?, ?)').run(id, title.trim(), description, weekKey, color)
+  db.prepare('INSERT INTO goals (id, title, description, week_key, color, group_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, title.trim(), description, weekKey, color, groupId)
   const goal = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
-  const insertSub = db.prepare('INSERT INTO goal_subtasks (id, goal_id, title, completed, sort_order, due_date, linked_task_id) VALUES (?, ?, ?, 0, ?, ?, ?)')
+  const insertSub = db.prepare('INSERT INTO goal_subtasks (id, goal_id, title, completed, sort_order, due_date, linked_task_id, assignee_id) VALUES (?, ?, ?, 0, ?, ?, ?, ?)')
   subtasks.forEach((s, i) => {
-    const linkedTaskId = syncSubtaskTask({ title: s.title, completed: false, dueDate: s.dueDate, linkedTaskId: null }, goal)
-    insertSub.run(uid(), id, s.title, i, s.dueDate || null, linkedTaskId)
+    const linkedTaskId = syncSubtaskTask({ title: s.title, completed: false, dueDate: s.dueDate, assigneeId: s.assigneeId, linkedTaskId: null }, goal)
+    insertSub.run(uid(), id, s.title, i, s.dueDate || null, linkedTaskId, s.assigneeId || null)
   })
   const gsubs = db.prepare('SELECT * FROM goal_subtasks WHERE goal_id = ? ORDER BY sort_order').all(id)
   res.status(201).json(rowToGoal(goal, gsubs))
 })
 
 router.patch('/:id', (req, res) => {
-  const { title, description, color, weekKey, subtasks } = req.body
-  const info = db.prepare('UPDATE goals SET title = COALESCE(?, title), description = COALESCE(?, description), color = COALESCE(?, color), week_key = COALESCE(?, week_key) WHERE id = ?')
+  const { title, description, color, weekKey, groupId, subtasks } = req.body
+  const groupIdProvided = 'groupId' in req.body
+  db.prepare('UPDATE goals SET title = COALESCE(?, title), description = COALESCE(?, description), color = COALESCE(?, color), week_key = COALESCE(?, week_key) WHERE id = ?')
     .run(title ?? null, description ?? null, color ?? null, weekKey ?? null, req.params.id)
-  if (info.changes === 0) return res.status(404).json({ error: 'not found' })
+  if (groupIdProvided) {
+    db.prepare('UPDATE goals SET group_id = ? WHERE id = ?').run(groupId, req.params.id)
+  }
   const goal = db.prepare('SELECT * FROM goals WHERE id = ?').get(req.params.id)
+  if (!goal) return res.status(404).json({ error: 'not found' })
 
   if (subtasks !== undefined) {
     const existing = db.prepare('SELECT * FROM goal_subtasks WHERE goal_id = ?').all(req.params.id)
@@ -74,7 +78,7 @@ router.patch('/:id', (req, res) => {
     existing.forEach(s => { existingById[s.id] = s })
 
     db.prepare('DELETE FROM goal_subtasks WHERE goal_id = ?').run(req.params.id)
-    const insertSub = db.prepare('INSERT INTO goal_subtasks (id, goal_id, title, completed, sort_order, due_date, linked_task_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    const insertSub = db.prepare('INSERT INTO goal_subtasks (id, goal_id, title, completed, sort_order, due_date, linked_task_id, assignee_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
 
     const keptTaskIds = new Set()
     subtasks.forEach((s, i) => {
@@ -83,10 +87,11 @@ router.patch('/:id', (req, res) => {
         title: s.title,
         completed: !!s.completed,
         dueDate: s.dueDate,
+        assigneeId: s.assigneeId,
         linkedTaskId: prev?.linked_task_id || null,
       }, goal)
       if (linkedTaskId) keptTaskIds.add(linkedTaskId)
-      insertSub.run(s.id || uid(), req.params.id, s.title, s.completed ? 1 : 0, i, s.dueDate || null, linkedTaskId)
+      insertSub.run(s.id || uid(), req.params.id, s.title, s.completed ? 1 : 0, i, s.dueDate || null, linkedTaskId, s.assigneeId || null)
     })
 
     // Remove tasks linked to subtasks that were deleted

@@ -5,10 +5,9 @@ const AVATAR_IMG = {
   beatrice: '/pm/avatar-igor.jpg',
 }
 
-export default function UserAvatar({ userId, size = 24, showTooltip = false }) {
+function SingleAvatar({ userId, size, showTooltip, style }) {
   const user = USERS.find(u => u.id === userId)
   if (!user) return null
-
   const img = AVATAR_IMG[user.id]
 
   return (
@@ -19,6 +18,7 @@ export default function UserAvatar({ userId, size = 24, showTooltip = false }) {
         width: size,
         height: size,
         border: `1.5px solid ${user.color}66`,
+        ...style,
       }}
     >
       {img
@@ -30,4 +30,18 @@ export default function UserAvatar({ userId, size = 24, showTooltip = false }) {
       }
     </div>
   )
+}
+
+export default function UserAvatar({ userId, size = 24, showTooltip = false }) {
+  if (userId === 'both') {
+    const overlap = size * 0.45
+    return (
+      <div className="flex-shrink-0 flex items-center" style={{ width: size + overlap, height: size }} title={showTooltip ? 'Igor & Beatrice' : undefined}>
+        <SingleAvatar userId="igor" size={size} style={{ zIndex: 1, background: '#1a1a1d' }} />
+        <SingleAvatar userId="beatrice" size={size} style={{ marginLeft: -overlap, background: '#1a1a1d' }} />
+      </div>
+    )
+  }
+
+  return <SingleAvatar userId={userId} size={size} showTooltip={showTooltip} />
 }

@@ -148,6 +148,13 @@ export default function TaskModal() {
                   {u.name}
                 </button>
               ))}
+              <button
+                onClick={() => setForm(f => ({ ...f, assigneeId: f.assigneeId === 'both' ? null : 'both' }))}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${form.assigneeId === 'both' ? 'border-indigo-500/50 bg-indigo-500/10 text-white/80' : 'border-white/10 text-white/40 hover:border-white/20'}`}
+              >
+                <UserAvatar userId="both" size={20} />
+                Entrambi
+              </button>
             </div>
           </div>
 
