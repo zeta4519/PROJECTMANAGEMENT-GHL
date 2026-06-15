@@ -13,6 +13,7 @@ export default function GoalModal() {
   if (!modal || !['new-goal', 'edit-goal'].includes(modal.type)) return null
 
   const existing = modal.type === 'edit-goal' ? modal.goal : null
+  const defaults = modal.defaults || {}
 
   const [form, setForm] = useState({
     title: existing?.title || '',
@@ -21,6 +22,7 @@ export default function GoalModal() {
     subtasks: existing?.subtasks || [],
   })
   const [newSub, setNewSub] = useState('')
+  const [newSubDate, setNewSubDate] = useState('')
   const [saving, setSaving] = useState(false)
 
   const close = () => dispatch({ type: 'SET_MODAL', modal: null })
@@ -33,7 +35,7 @@ export default function GoalModal() {
         const updated = await api.goals.update(existing.id, form)
         dispatch({ type: 'UPDATE_GOAL', goal: updated })
       } else {
-        const created = await api.goals.create({ ...form, weekKey: getWeekKey() })
+        const created = await api.goals.create({ ...form, weekKey: defaults.weekKey || getWeekKey() })
         dispatch({ type: 'ADD_GOAL', goal: created })
       }
       close()
@@ -60,11 +62,13 @@ export default function GoalModal() {
 
   const addSub = () => {
     if (!newSub.trim()) return
-    setForm(f => ({ ...f, subtasks: [...f.subtasks, { id: uid(), title: newSub.trim(), completed: false }] }))
+    setForm(f => ({ ...f, subtasks: [...f.subtasks, { id: uid(), title: newSub.trim(), completed: false, dueDate: newSubDate || null }] }))
     setNewSub('')
+    setNewSubDate('')
   }
   const removeSub = (id) => setForm(f => ({ ...f, subtasks: f.subtasks.filter(s => s.id !== id) }))
   const toggleSub = (id) => setForm(f => ({ ...f, subtasks: f.subtasks.map(s => s.id === id ? { ...s, completed: !s.completed } : s) }))
+  const setSubDate = (id, dueDate) => setForm(f => ({ ...f, subtasks: f.subtasks.map(s => s.id === id ? { ...s, dueDate: dueDate || null } : s) }))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={close}>
@@ -93,6 +97,7 @@ export default function GoalModal() {
 
           <div>
             <label className="text-xs text-white/30 mb-2 block">Step / Sotto-obiettivi</label>
+            <p className="text-xs text-white/20 mb-2">Imposta una scadenza per far apparire lo step anche nelle giornate</p>
             <div className="flex flex-col gap-1.5 mb-2">
               {form.subtasks.map(s => (
                 <div key={s.id} className="flex items-center gap-2 group">
@@ -100,12 +105,26 @@ export default function GoalModal() {
                     {s.completed && <span className="text-white text-[10px]">✓</span>}
                   </button>
                   <span className={`text-sm flex-1 ${s.completed ? 'line-through text-white/30' : 'text-white/70'}`}>{s.title}</span>
+                  <input
+                    type="date"
+                    value={s.dueDate || ''}
+                    onChange={e => setSubDate(s.id, e.target.value)}
+                    className="bg-white/5 border border-white/10 text-white/50 text-xs rounded-lg px-2 py-1 outline-none focus:border-white/20"
+                    style={{ colorScheme: 'dark' }}
+                  />
                   <button onClick={() => removeSub(s.id)} className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all"><Trash2 size={13} /></button>
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
               <input value={newSub} onChange={e => setNewSub(e.target.value)} placeholder="Aggiungi step..." className="flex-1 bg-white/5 border border-white/10 text-white/70 text-sm rounded-lg px-3 py-1.5 outline-none placeholder-white/20 focus:border-white/20" onKeyDown={e => e.key === 'Enter' && addSub()} />
+              <input
+                type="date"
+                value={newSubDate}
+                onChange={e => setNewSubDate(e.target.value)}
+                className="bg-white/5 border border-white/10 text-white/50 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-white/20"
+                style={{ colorScheme: 'dark' }}
+              />
               <button onClick={addSub} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 rounded-lg transition-colors"><Plus size={14} /></button>
             </div>
           </div>

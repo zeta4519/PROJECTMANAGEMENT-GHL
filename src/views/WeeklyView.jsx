@@ -3,13 +3,13 @@ import { getWeekKey } from '../store/AppContext'
 import { useFilteredTasks } from '../store/useFilteredTasks'
 import TaskCard from '../components/TaskCard'
 import GoalCard from '../components/GoalCard'
-import { Plus, Target } from 'lucide-react'
+import { Plus, Target, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 
-function getWeekDays() {
-  const today = new Date()
-  const day = today.getDay()
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1))
+function getWeekDays(refDate) {
+  const day = refDate.getDay()
+  const monday = new Date(refDate)
+  monday.setDate(refDate.getDate() - (day === 0 ? 6 : day - 1))
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday)
     d.setDate(monday.getDate() + i)
@@ -17,18 +17,34 @@ function getWeekDays() {
   })
 }
 
+function isGoalDone(goal) {
+  return goal.subtasks.length > 0 && goal.subtasks.every(s => s.completed)
+}
+
 const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
 export default function WeeklyView() {
   const { state, dispatch } = useApp()
   const tasks = useFilteredTasks()
-  const days = getWeekDays()
+  const [weekOffset, setWeekOffset] = useState(0)
+
+  const refDate = new Date()
+  refDate.setDate(refDate.getDate() + weekOffset * 7)
+
+  const days = getWeekDays(refDate)
   const todayStr = new Date().toISOString().split('T')[0]
-  const weekKey = getWeekKey()
-  const weekGoals = state.goals.filter(g => g.weekKey === weekKey)
+  const weekKey = getWeekKey(refDate)
+  const currentWeekKey = getWeekKey()
+  const isCurrentWeek = weekOffset === 0
+
+  let weekGoals = state.goals.filter(g => g.weekKey === weekKey)
+  if (isCurrentWeek) {
+    const carried = state.goals.filter(g => g.weekKey !== weekKey && g.weekKey < currentWeekKey && !isGoalDone(g))
+    weekGoals = [...weekGoals, ...carried]
+  }
 
   const openNew = (dueDate) => dispatch({ type: 'SET_MODAL', modal: { type: 'new-task', defaults: { dueDate } } })
-  const openNewGoal = () => dispatch({ type: 'SET_MODAL', modal: { type: 'new-goal' } })
+  const openNewGoal = () => dispatch({ type: 'SET_MODAL', modal: { type: 'new-goal', defaults: { weekKey } } })
 
   const stats = {
     total: 0, done: 0, urgent: 0,
@@ -62,7 +78,7 @@ export default function WeeklyView() {
         </div>
         {weekGoals.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {weekGoals.map(g => <GoalCard key={g.id} goal={g} />)}
+            {weekGoals.map(g => <GoalCard key={g.id} goal={g} carriedOver={g.weekKey !== weekKey} />)}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-white/10 p-6 text-center">
@@ -73,9 +89,24 @@ export default function WeeklyView() {
       </div>
 
       {/* Header */}
-      <div className="mb-6 flex items-end justify-between">
+      <div className="mb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-white/90 mb-1">Questa settimana</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <button onClick={() => setWeekOffset(o => o - 1)} className="text-white/30 hover:text-white/70 transition-colors p-1">
+              <ChevronLeft size={16} />
+            </button>
+            <h1 className="text-xl font-semibold text-white/90">
+              {isCurrentWeek ? 'Questa settimana' : weekOffset > 0 ? 'Settimana prossima' : 'Settimana passata'}
+            </h1>
+            <button onClick={() => setWeekOffset(o => o + 1)} className="text-white/30 hover:text-white/70 transition-colors p-1">
+              <ChevronRight size={16} />
+            </button>
+            {!isCurrentWeek && (
+              <button onClick={() => setWeekOffset(0)} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors ml-1">
+                Oggi
+              </button>
+            )}
+          </div>
           <p className="text-sm text-white/35">
             {days[0].toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} — {days[6].toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
           </p>

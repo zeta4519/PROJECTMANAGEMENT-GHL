@@ -15,6 +15,10 @@ db.pragma('foreign_keys = ON')
 // Add assignee_id column if it doesn't exist (migration)
 try { db.exec('ALTER TABLE tasks ADD COLUMN assignee_id TEXT') } catch {}
 
+// Add due_date / linked_task_id to goal_subtasks (migration)
+try { db.exec('ALTER TABLE goal_subtasks ADD COLUMN due_date TEXT') } catch {}
+try { db.exec('ALTER TABLE goal_subtasks ADD COLUMN linked_task_id TEXT') } catch {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS groups (
     id TEXT PRIMARY KEY,

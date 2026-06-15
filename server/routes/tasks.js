@@ -5,6 +5,14 @@ const router = Router()
 
 function uid() { return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) }
 
+// Keep a goal's subtask in sync when its linked daily task changes status
+function syncLinkedGoalSubtask(taskId, status) {
+  const link = db.prepare('SELECT id FROM goal_subtasks WHERE linked_task_id = ?').get(taskId)
+  if (link) {
+    db.prepare('UPDATE goal_subtasks SET completed = ? WHERE id = ?').run(status === 'done' ? 1 : 0, link.id)
+  }
+}
+
 function rowToTask(row, subtasks) {
   return {
     id: row.id,
@@ -64,6 +72,7 @@ router.patch('/:id', (req, res) => {
   if (assigneeId !== undefined) {
     db.prepare('UPDATE tasks SET assignee_id = ? WHERE id = ?').run(assigneeId, id)
   }
+  if (status) syncLinkedGoalSubtask(id, status)
   if (subtasks !== undefined) {
     db.prepare('DELETE FROM subtasks WHERE task_id = ?').run(id)
     const insertSub = db.prepare('INSERT INTO subtasks (id, task_id, title, completed, sort_order) VALUES (?, ?, ?, ?, ?)')
@@ -81,6 +90,7 @@ router.patch('/:id/status', (req, res) => {
   if (!status) return res.status(400).json({ error: 'status required' })
   const info = db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, id)
   if (info.changes === 0) return res.status(404).json({ error: 'not found' })
+  syncLinkedGoalSubtask(id, status)
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
   const subs = db.prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY sort_order').all(id)
   res.json(rowToTask(task, subs))
@@ -99,6 +109,7 @@ router.patch('/:id/subtasks/:subId/toggle', (req, res) => {
 
 // DELETE /api/tasks/:id
 router.delete('/:id', (req, res) => {
+  db.prepare('UPDATE goal_subtasks SET linked_task_id = NULL WHERE linked_task_id = ?').run(req.params.id)
   const info = db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id)
   if (info.changes === 0) return res.status(404).json({ error: 'not found' })
   res.status(204).end()

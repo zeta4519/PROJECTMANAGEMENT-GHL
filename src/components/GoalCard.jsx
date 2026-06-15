@@ -3,7 +3,7 @@ import { useApp } from '../store/AppContext'
 import { api } from '../api.js'
 import { ChevronDown, ChevronRight, Edit2 } from 'lucide-react'
 
-export default function GoalCard({ goal }) {
+export default function GoalCard({ goal, carriedOver = false }) {
   const { dispatch } = useApp()
   const [open, setOpen] = useState(true)
 
@@ -36,6 +36,7 @@ export default function GoalCard({ goal }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-sm font-semibold ${done ? 'text-white/40 line-through' : 'text-white/90'}`}>{goal.title}</span>
               {done && <span className="text-xs text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full">✓ Completato</span>}
+              {carriedOver && <span className="text-xs text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">Riportato</span>}
             </div>
             {goal.description && <p className="text-xs text-white/35 mt-0.5">{goal.description}</p>}
             <div className="flex items-center gap-2 mt-2">
@@ -58,7 +59,12 @@ export default function GoalCard({ goal }) {
               <div className="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors" style={s.completed ? { background: goal.color, borderColor: goal.color } : { borderColor: 'rgba(255,255,255,0.2)' }}>
                 {s.completed && <span className="text-white text-[10px]">✓</span>}
               </div>
-              <span className={`text-sm transition-colors ${s.completed ? 'line-through text-white/25' : 'text-white/65 group-hover:text-white/80'}`}>{s.title}</span>
+              <span className={`text-sm transition-colors flex-1 ${s.completed ? 'line-through text-white/25' : 'text-white/65 group-hover:text-white/80'}`}>{s.title}</span>
+              {s.dueDate && (
+                <span className="text-xs text-white/25 flex-shrink-0">
+                  {new Date(s.dueDate + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                </span>
+              )}
             </button>
           ))}
         </div>
