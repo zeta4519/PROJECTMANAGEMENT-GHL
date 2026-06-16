@@ -1,18 +1,25 @@
-import { useApp } from '../store/AppContext'
+import { useState } from 'react'
+import { useApp, USERS } from '../store/AppContext'
 import { useFilteredTasks } from '../store/useFilteredTasks'
 import TaskCard from '../components/TaskCard'
+import UserAvatar from '../components/UserAvatar'
 import { Plus, Sun } from 'lucide-react'
 
 const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 }
 
 export default function TodayView() {
   const { dispatch } = useApp()
+  const [assigneeFilter, setAssigneeFilter] = useState(null)
   const tasks = useFilteredTasks()
   const today = new Date().toISOString().split('T')[0]
 
-  const todayTasks = tasks
+  const allTodayTasks = tasks
     .filter(t => t.dueDate === today)
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+
+  const todayTasks = assigneeFilter
+    ? allTodayTasks.filter(t => !t.assigneeId || t.assigneeId === assigneeFilter || t.assigneeId === 'both')
+    : allTodayTasks
 
   const pending = todayTasks.filter(t => t.status !== 'done')
   const done = todayTasks.filter(t => t.status === 'done')
@@ -32,6 +39,26 @@ export default function TodayView() {
           <h1 className="text-xl font-semibold text-white/90">Oggi</h1>
         </div>
         <p className="text-sm text-white/35 capitalize">{dayName}</p>
+
+        {/* Assignee filter */}
+        <div className="flex items-center gap-2 mt-4">
+          <button
+            onClick={() => setAssigneeFilter(null)}
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${!assigneeFilter ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
+          >
+            Tutti
+          </button>
+          {USERS.map(u => (
+            <button
+              key={u.id}
+              onClick={() => setAssigneeFilter(f => f === u.id ? null : u.id)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${assigneeFilter === u.id ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
+            >
+              <UserAvatar userId={u.id} size={16} />
+              {u.name}
+            </button>
+          ))}
+        </div>
 
         {/* Progress bar */}
         {todayTasks.length > 0 && (
